@@ -1,5 +1,7 @@
 #graphql
 
+scalar Time
+
 type Doctor {
   id: ID!
   name: String!
@@ -12,7 +14,7 @@ type Patient {
 
 type Appointment {
   id: ID!
-  time: timestamp!
+  time: Time!
   doctor: Doctor!
   patient: Patient!
 }
@@ -20,7 +22,7 @@ type Appointment {
 type Comment {
   id: ID!
   appointment: Appointment!
-  time: timestamp
+  time: Time
   body: String!
 }
 
