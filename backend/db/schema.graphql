@@ -1,0 +1,32 @@
+#graphql
+
+type Doctor {
+  id: ID!
+  name: String!
+}
+
+type Patient {
+  id: ID!
+  name: String!
+}
+
+type Appointment {
+  id: ID!
+  time: timestamp!
+  doctor: Doctor!
+  patient: Patient!
+}
+
+type Comment {
+  id: ID!
+  appointment: Appointment!
+  time: timestamp
+  body: String!
+}
+
+type Query {
+  doctors: [Doctor]
+  patients: [Patient]
+  appointments: [Appointment]
+  comments: [Comment]
+}
