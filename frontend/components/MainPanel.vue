@@ -14,7 +14,7 @@ function menu(index) {
     
 <template>
   <main>
-    <section class="panel">
+    <section class="panel panel-open">
       <button :class="{ selected: selection == 0 }" @click="menu(0)">Assistant</button>
       <button :class="{ selected: selection == 1 }" @click="menu(1)">Doctor</button>
     </section>
@@ -31,7 +31,6 @@ main {
   flex-direction: column;
   margin: auto;
   max-width: 80%;
-  height: 80%;
 }
 
 button {
@@ -60,11 +59,14 @@ button.selected {
   align-items: flex-end;
 }
 
+
 .container {
   flex: 2;
   background-color: #cadfff;
   padding: 1em;
   border-radius: 0px 20px 20px 20px;
   box-shadow: #19024ea7 3px 7px 5px;
+  min-height: 50vh;
 }
+
 </style>
