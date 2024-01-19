@@ -23,7 +23,7 @@ type Appointment {
   time: Time!
   doctor: Doctor!
   patient: Patient!
-  comments: [Comment]!
+  comments(desc: Boolean): [Comment]!
 }
 
 type Comment {
@@ -40,13 +40,13 @@ type Query {
   appointments: [Appointment]
   appointmentsByPatient(id: ID!): [Appointment]
   appointmentsByDoctor(id: ID!): [Appointment]
-  comments: [Comment]
+  comments(desc: Boolean): [Comment]
 }
 
 type Mutation {
   addComment(comment: AddCommentInput!): Comment
   updateComment(id: ID!, body: String!): Comment
-  deleteComment(id: ID!): [Comment]
+  deleteComment(id: ID!, desc: Boolean): [Comment]
 }
 
 input AddCommentInput {
@@ -54,13 +54,22 @@ input AddCommentInput {
   body: String!
 }
 `;
+const sortComments = function (comments, desc) {
+    const sortedComments = comments.toSorted((a, b) => {
+        if (!desc) {
+            return new Date(a.time).getTime() - new Date(b.time).getTime();
+        }
+        return new Date(b.time).getTime() - new Date(a.time).getTime();
+    });
+    return sortedComments;
+};
 const resolvers = {
     Query: {
         doctors: () => doctors,
         patients: () => patients,
         patientByName: (_, args) => patients.find(patient => patient.name === args.name),
         appointments: () => appointments,
-        comments: () => comments,
+        comments: (_, args) => sortComments(comments, args.desc),
         appointmentsByPatient: (_, args) => appointments.filter(appointment => appointment.patient_id === args.id),
         appointmentsByDoctor: (_, args) => appointments.filter(appointment => appointment.doctor_id === args.id)
     },
@@ -81,8 +90,9 @@ const resolvers = {
         doctor(parent) {
             return doctors.find(d => d.id === parent.doctor_id);
         },
-        comments(parent) {
-            return comments.filter(c => c.appointment_id === parent.id);
+        comments(parent, args) {
+            const filteredComments = comments.filter(c => c.appointment_id === parent.id);
+            return sortComments(filteredComments, args.desc);
         }
     },
     Comment: {
@@ -93,10 +103,12 @@ const resolvers = {
     Mutation: {
         deleteComment(_, args) {
             const index = comments.findIndex(c => c.id === args.id);
+            let deletedComment = null;
             if (index >= 0) {
-                comments.splice(index, 1);
+                deletedComment = comments.splice(index, 1)[0];
             }
-            return comments;
+            const filteredComments = comments.filter(c => c.appointment_id === deletedComment.appointment_id);
+            return sortComments(filteredComments, args.desc);
         },
         updateComment(_, args) {
             const index = comments.findIndex(c => c.id === args.id);
@@ -108,8 +120,9 @@ const resolvers = {
             return comments[index];
         },
         addComment(_, args) {
+            const newId = String(Number(comments[comments.length - 1].id) + 1);
             const newComment = {
-                id: String(comments.length + 1),
+                id: newId,
                 time: new Date(Date.now()).toString(),
                 ...args.comment
             };
@@ -184,7 +197,7 @@ const comments = [
     {
         id: '4',
         appointment_id: "3",
-        time: '2024-01-20T17:30:15+05:30',
+        time: '2024-01-20T17:30:20+05:30',
         body: 'The doctor and the patient didn\'t see eye to eye.'
     },
 ];
