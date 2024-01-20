@@ -20,6 +20,7 @@ type Patient {
   id: ID!
   name: String!
   appointments: [Appointment]
+  files: [PatientFile]
 }
 
 type Appointment {
@@ -37,6 +38,12 @@ type Comment {
   body: String!
 }
 
+type PatientFile {
+  id: ID!
+  filename: String!
+  patient: Patient!
+}
+
 type Query {
   doctors: [Doctor]
   patients: [Patient]
@@ -45,12 +52,14 @@ type Query {
   appointmentsByPatient(id: ID!): [Appointment]
   appointmentsByDoctor(id: ID!): [Appointment]
   comments(desc: Boolean): [Comment]
+  patientFiles: [PatientFile]
 }
 
 type Mutation {
   addComment(comment: AddCommentInput!): Comment
   updateComment(id: ID!, body: String!): Comment
   deleteComment(id: ID!, desc: Boolean): [Comment]
+  addPatientFile(patient_id: String, filename: String): [PatientFile]
 }
 
 input AddCommentInput {
@@ -69,6 +78,10 @@ const sortComments = function(comments, desc) {
   return sortedComments;
 };
 
+const generateId = function() {
+  return `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+};
+
 const resolvers = {
   Query: {
     doctors: () => doctors,
@@ -77,7 +90,8 @@ const resolvers = {
     appointments: () => appointments,
     comments: (_, args) => sortComments(comments, args.desc),
     appointmentsByPatient: (_, args: { id: string; }) => appointments.filter(appointment => appointment.patient_id === args.id),
-    appointmentsByDoctor: (_, args: { id: string; }) => appointments.filter(appointment => appointment.doctor_id === args.id)
+    appointmentsByDoctor: (_, args: { id: string; }) => appointments.filter(appointment => appointment.doctor_id === args.id),
+    patientFiles: () => patientFiles
   },
 
   Doctor: {
@@ -89,6 +103,9 @@ const resolvers = {
   Patient: {
     appointments(parent) {
       return appointments.filter(appt => appt.patient_id === parent.id);
+    },
+    files(parent) {
+      return patientFiles.filter(file => file.patient_id === parent.id);
     }
   },
 
@@ -108,6 +125,12 @@ const resolvers = {
   Comment: {
     appointment(parent) {
       return appointments.find(appt => parent.appointment_id === appt.id);
+    }
+  },
+
+  PatientFile: {
+    patient(parent) {
+      return patients.find(p => parent.patient_id === p.id);
     }
   },
 
@@ -136,7 +159,7 @@ const resolvers = {
     },
     addComment(_, args) {
 
-      const newId = String(Number(comments[comments.length - 1].id) + 1);
+      const newId = generateId();
 
       const newComment = {
         id: newId,
@@ -147,6 +170,10 @@ const resolvers = {
       comments.push(newComment);
 
       return newComment;
+    },
+    addPatientFile(_, args) {
+      const newId = generateId();
+      patientFiles.push({ id: newId, filename: args.filename, patient_id: args.patient_id });
     }
   }
 };
@@ -225,12 +252,16 @@ const comments = [
   },
 ];
 
+const patientFiles = [
+
+];
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'downloads/');
   },
   filename: (req, file, cb) => {
-    const suffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const suffix = generateId();
     cb(null, `${file.fieldname}-${suffix}.json`);
   },
 });
@@ -238,14 +269,15 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 const app = express();
 const server = new ApolloServer({ typeDefs, resolvers });
+const PORT = 4000;
 
 await server.start();
 
 app.use('/api', cors<cors.CorsRequest>(), express.json(), expressMiddleware(server));
 
-await new Promise<void>((resolve) => app.listen({ port: 4000 }, resolve));
+await new Promise<void>((resolve) => app.listen({ port: PORT }, resolve));
 
-console.log(`Server listening at http://localhost:4000/`);
+console.log(`Server listening on Port ${PORT}`);
 
 app.get('/patients', (req, res) => {
   res.json({ success: true, message: "Hello world!" });
@@ -253,17 +285,28 @@ app.get('/patients', (req, res) => {
 
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
 
-  const { mimetype, originalname } = req.file;
+  const { mimetype, originalname, filename, destination } = req.file;
+
+  // console.log(mimetype);
 
   if (mimetype !== 'application/json') {
     return res.json({ success: true });
   }
+  const filePath = `${destination}${filename}`;
+  console.log(filePath);
+  let patient_id;
 
-  const patientName = originalname.split('-')[0].replaceAll('_', ' ');
+  fs.readFile(filePath, 'utf-8', (err, data) => {
+    const jsonData = JSON.parse(data);
 
-  console.log(patientName);
+    patient_id = jsonData.id;
 
-  // const filePath = `${destination}${filename}`;
+    resolvers.Mutation.addPatientFile(null, { patient_id, filename });
+
+
+  });
+
+
   return res.json({ success: true });
 
 });

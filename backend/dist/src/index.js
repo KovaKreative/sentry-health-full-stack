@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'node:fs';
 import cors from 'cors';
 import multer from 'multer';
 import { ApolloServer } from '@apollo/server';
@@ -17,6 +18,7 @@ type Patient {
   id: ID!
   name: String!
   appointments: [Appointment]
+  files: [PatientFile]
 }
 
 type Appointment {
@@ -34,6 +36,12 @@ type Comment {
   body: String!
 }
 
+type PatientFile {
+  id: ID!
+  filename: String!
+  patient: Patient!
+}
+
 type Query {
   doctors: [Doctor]
   patients: [Patient]
@@ -42,12 +50,14 @@ type Query {
   appointmentsByPatient(id: ID!): [Appointment]
   appointmentsByDoctor(id: ID!): [Appointment]
   comments(desc: Boolean): [Comment]
+  patientFiles: [PatientFile]
 }
 
 type Mutation {
   addComment(comment: AddCommentInput!): Comment
   updateComment(id: ID!, body: String!): Comment
   deleteComment(id: ID!, desc: Boolean): [Comment]
+  addPatientFile(patient_id: String, filename: String): [PatientFile]
 }
 
 input AddCommentInput {
@@ -64,6 +74,9 @@ const sortComments = function (comments, desc) {
     });
     return sortedComments;
 };
+const generateId = function () {
+    return `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+};
 const resolvers = {
     Query: {
         doctors: () => doctors,
@@ -72,7 +85,8 @@ const resolvers = {
         appointments: () => appointments,
         comments: (_, args) => sortComments(comments, args.desc),
         appointmentsByPatient: (_, args) => appointments.filter(appointment => appointment.patient_id === args.id),
-        appointmentsByDoctor: (_, args) => appointments.filter(appointment => appointment.doctor_id === args.id)
+        appointmentsByDoctor: (_, args) => appointments.filter(appointment => appointment.doctor_id === args.id),
+        patientFiles: () => patientFiles
     },
     Doctor: {
         appointments(parent) {
@@ -82,6 +96,9 @@ const resolvers = {
     Patient: {
         appointments(parent) {
             return appointments.filter(appt => appt.patient_id === parent.id);
+        },
+        files(parent) {
+            return patientFiles.filter(file => file.patient_id === parent.id);
         }
     },
     Appointment: {
@@ -99,6 +116,11 @@ const resolvers = {
     Comment: {
         appointment(parent) {
             return appointments.find(appt => parent.appointment_id === appt.id);
+        }
+    },
+    PatientFile: {
+        patient(parent) {
+            return patients.find(p => parent.patient_id === p.id);
         }
     },
     Mutation: {
@@ -121,7 +143,7 @@ const resolvers = {
             return comments[index];
         },
         addComment(_, args) {
-            const newId = String(Number(comments[comments.length - 1].id) + 1);
+            const newId = generateId();
             const newComment = {
                 id: newId,
                 time: new Date(Date.now()).toString(),
@@ -129,6 +151,10 @@ const resolvers = {
             };
             comments.push(newComment);
             return newComment;
+        },
+        addPatientFile(_, args) {
+            const newId = generateId();
+            patientFiles.push({ id: newId, filename: args.filename, patient_id: args.patient_id });
         }
     }
 };
@@ -153,7 +179,7 @@ const patients = [
     },
     {
         id: '3',
-        name: 'Iris N. Jury',
+        name: 'Iris N Jury',
     }
 ];
 const appointments = [
@@ -202,32 +228,40 @@ const comments = [
         body: 'The doctor and the patient didn\'t see eye to eye.'
     },
 ];
+const patientFiles = [];
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'downloads/');
     },
     filename: (req, file, cb) => {
-        const suffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+        const suffix = generateId();
         cb(null, `${file.fieldname}-${suffix}.json`);
     },
 });
 const upload = multer({ storage });
 const app = express();
 const server = new ApolloServer({ typeDefs, resolvers });
+const PORT = 4000;
 await server.start();
 app.use('/api', cors(), express.json(), expressMiddleware(server));
-await new Promise((resolve) => app.listen({ port: 4000 }, resolve));
-console.log(`Server listening at http://localhost:4000/`);
+await new Promise((resolve) => app.listen({ port: PORT }, resolve));
+console.log(`Server listening on Port ${PORT}`);
 app.get('/patients', (req, res) => {
     res.json({ success: true, message: "Hello world!" });
 });
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
-    const { mimetype, originalname } = req.file;
+    const { mimetype, originalname, filename, destination } = req.file;
+    // console.log(mimetype);
     if (mimetype !== 'application/json') {
         return res.json({ success: true });
     }
-    const patientName = originalname.split('-')[0].replaceAll('_', ' ');
-    console.log(patientName);
-    // const filePath = `${destination}${filename}`;
+    const filePath = `${destination}${filename}`;
+    console.log(filePath);
+    let patient_id;
+    fs.readFile(filePath, 'utf-8', (err, data) => {
+        const jsonData = JSON.parse(data);
+        patient_id = jsonData.id;
+        resolvers.Mutation.addPatientFile(null, { patient_id, filename });
+    });
     return res.json({ success: true });
 });

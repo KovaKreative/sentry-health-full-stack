@@ -90,8 +90,6 @@ watch(patient, () => {
     <hr>
     <!-- Appointments -->
     <Appointments v-if="patientData" :appointments="patientData.appointments" />
-
-
   </div>
 </template>
 
