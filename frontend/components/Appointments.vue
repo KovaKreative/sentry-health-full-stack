@@ -132,15 +132,6 @@ async function deleteComment(appointmentId, comment) {
   padding-left: 1em;
 }
 
-.flex {
-  display: flex;
-  gap: 1em;
-}
-
-.flex-between {
-  justify-content: space-between;
-}
-
 .link-style {
   background: none;
   border: none;

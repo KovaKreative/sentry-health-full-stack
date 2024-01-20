@@ -2,6 +2,7 @@
 
 import Appointments from './Appointments.vue';
 
+
 import { getDoctors, getDoctorData } from '~/helpers/apiCalls';
 
 const doctors = ref([]);
