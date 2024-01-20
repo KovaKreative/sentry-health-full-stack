@@ -31,6 +31,7 @@ main {
   flex-direction: column;
   margin: auto;
   max-width: 80%;
+  max-height: 90vh;
 }
 
 button {
@@ -67,6 +68,8 @@ button.selected {
   border-radius: 0px 20px 20px 20px;
   box-shadow: #19024ea7 3px 7px 5px;
   min-height: 50vh;
+  margin-bottom: 1em;
+  overflow-y: scroll;
 }
 
 </style>
