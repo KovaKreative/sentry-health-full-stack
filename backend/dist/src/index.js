@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 const typeDefs = `#graphql
@@ -201,6 +202,16 @@ const comments = [
         body: 'The doctor and the patient didn\'t see eye to eye.'
     },
 ];
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'downloads/');
+    },
+    filename: (req, file, cb) => {
+        const suffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+        cb(null, `${file.fieldname}-${suffix}.json`);
+    },
+});
+const upload = multer({ storage });
 const app = express();
 const server = new ApolloServer({ typeDefs, resolvers });
 await server.start();
@@ -209,4 +220,14 @@ await new Promise((resolve) => app.listen({ port: 4000 }, resolve));
 console.log(`Server listening at http://localhost:4000/`);
 app.get('/patients', (req, res) => {
     res.json({ success: true, message: "Hello world!" });
+});
+app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
+    const { mimetype, originalname } = req.file;
+    if (mimetype !== 'application/json') {
+        return res.json({ success: true });
+    }
+    const patientName = originalname.split('-')[0].replaceAll('_', ' ');
+    console.log(patientName);
+    // const filePath = `${destination}${filename}`;
+    return res.json({ success: true });
 });

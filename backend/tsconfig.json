@@ -2,8 +2,8 @@
     "compilerOptions": {
       "rootDirs": ["src"],
       "outDir": "dist",
-      "lib": ["es2020", "ESNext.Array"],
-      "target": "es2020",
+      "lib": ["es2021", "ESNext.Array"],
+      "target": "es2021",
       "module": "esnext",
       "moduleResolution": "node",
       "esModuleInterop": true,
