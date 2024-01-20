@@ -76,9 +76,13 @@ async function deleteComment(appointmentId, comment) {
     <h2>Appointments</h2>
     <div v-for="appointment in props.appointments">
       <div><b>Appointment ID:</b> {{ appointment.id }}</div>
-      <div><b>Appointment Date:</b> {{ new Date(appointment.time).toLocaleString('en-CA'), { timeZone: 'EST' } }}
+      <div>
+        <b>Appointment Date:</b> {{ new Date(appointment.time).toLocaleString('en-CA'), { timeZone: 'EST' } }}
       </div>
-      <div><b>Doctor:</b> Dr. {{ appointment.doctor.name }}</div>
+      <div class="flex">
+        <div v-if="appointment.doctor"><b>Doctor:</b> Dr. {{ appointment.doctor.name }}</div>
+        <div v-if="appointment.patient"><b>Patient:</b> {{ appointment.patient.name }}</div>
+      </div>
       <h3>Comments:</h3>
       <div class="comment" v-for="comment in appointment.comments">
         <div v-if="comment.id" class="flex flex-between">
@@ -130,6 +134,7 @@ async function deleteComment(appointmentId, comment) {
 
 .flex {
   display: flex;
+  gap: 1em;
 }
 
 .flex-between {

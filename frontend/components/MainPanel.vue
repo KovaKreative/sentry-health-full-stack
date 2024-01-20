@@ -58,8 +58,8 @@ button.selected {
   flex: 1;
   display: flex;
   align-items: flex-end;
+  justify-content: flex-start;
 }
-
 
 .container {
   flex: 2;
@@ -68,6 +68,7 @@ button.selected {
   border-radius: 0px 20px 20px 20px;
   box-shadow: #19024ea7 3px 7px 5px;
   min-height: 50vh;
+  width: 100%;
   margin-bottom: 1em;
   overflow-y: scroll;
 }

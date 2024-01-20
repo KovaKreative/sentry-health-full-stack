@@ -22,7 +22,7 @@ watch(doctor, () => {
 <template>
   <div>
     <h1>Doctor Panel</h1>
-    <form v-if="doctors.length > 0" class="patient-select">
+    <form v-if="doctors.length > 0" class="doctor-select">
       <label for="doctor">Doctor:</label>
       <select name="doctor" v-model="doctor">
         <option v-for="item in doctors" :value="item">Dr. {{ item.name }}</option>
@@ -32,4 +32,9 @@ watch(doctor, () => {
   </div>
 </template>
 
-<style lang="css"></style>
+<style lang="css">
+.doctor-select {
+  display: flex;
+  gap: 2em;
+  width: 50%;
+}</style>
