@@ -2,6 +2,8 @@
 const props = defineProps(['appointments']);
 
 import { addComment, updateComment, removeComment } from '~/helpers/apiCalls';
+import { toast } from 'vue3-toastify';
+
 
 const commentTemplate = { appointmentId: null, body: "" };
 
@@ -10,10 +12,14 @@ let newComment = ref({ ...commentTemplate });
 let buffer = "";
 let editing = ref(null);
 
-async function saveNewComment(newCommentObject) {
+function saveNewComment(newCommentObject) {
+  toast("Saving comment...", {
+    "theme": "auto",
+    "type": "info",
+    "position": "top-center",
+    "autoClose": 2000
+  });
   const comment = { appointment_id: newCommentObject.appointmentId, body: newCommentObject.body };
-  console.log(newCommentObject.appointmentId);
-  console.log(props.appointments);
 
   const appointmentObject = props.appointments.find(appt => appt.id === newCommentObject.appointmentId);
 
@@ -27,27 +33,78 @@ async function saveNewComment(newCommentObject) {
 
   const newCommentsLength = appointmentObject.comments.push(newComment);
 
-  const returnedComment = await addComment(comment);
+  addComment(comment)
+    .then(data => {
+      const returnedComment = data;
+      if (!data) {
+        toast("Something went wrong.", {
+          "theme": "auto",
+          "type": "error",
+          "position": "top-center",
+          "autoClose": 4000
+        });
+        return appointmentObject.comments.pop();
+      }
+      toast("New comment saved successfully!", {
+        "theme": "auto",
+        "type": "success",
+        "position": "top-center",
+        "autoClose": 1000
+      });
+      appointmentObject.comments[newCommentsLength - 1].id = returnedComment.id;
 
-  if (returnedComment === null) {
-    return appointmentObject.comments.pop();
-  }
+    })
+    .catch(() => {
+      toast("Unable to save comment.", {
+        "theme": "auto",
+        "type": "error",
+        "position": "top-center",
+        "autoClose": 4000
+      });
+      return appointmentObject.comments.pop();
+    });
 
-  appointmentObject.comments[newCommentsLength - 1].id = returnedComment.id;
 }
 
 async function saveComment(comment) {
+  toast("Saving comment...", {
+    "theme": "auto",
+    "type": "info",
+    "position": "top-center",
+    "autoClose": 2000
+  });
   editing.value = null;
 
-  const response = await updateComment(comment);
-
-  if (response === null) {
-    comment.body = buffer;
-    buffer = "";
-    return;
-  }
-
-  comment.time = response.time;
+  updateComment(comment)
+    .then(data => {
+      console.log(data);
+      if (!data) {
+        comment.body = buffer;
+        buffer = "";
+        return toast("Unable to save comment.", {
+          "theme": "auto",
+          "type": "error",
+          "position": "top-center",
+          "autoClose": 4000
+        });;
+      }
+      toast("Comment updated successfully!", {
+        "theme": "auto",
+        "type": "success",
+        "position": "top-center",
+        "autoClose": 1000
+      });
+      comment.time = data.time;
+    })
+    .catch((err) => {
+      console.log(err);
+      toast("Unable to save comment.", {
+        "theme": "auto",
+        "type": "error",
+        "position": "top-center",
+        "autoClose": 4000
+      });
+    });
 
 }
 
@@ -63,12 +120,22 @@ async function deleteComment(appointmentId, comment) {
   const newCommentList = await removeComment(comment);
 
   if (newCommentList === null) {
+    toast("Unable to delete comment.", {
+      "theme": "auto",
+      "type": "error",
+      "position": "top-center",
+      "autoClose": 4000
+    });
     return appointmentObject.comments = [...commentsBuffer];
   }
-
+  toast("Comment deleted!", {
+    "theme": "auto",
+    "type": "success",
+    "position": "top-center",
+    "autoClose": 1000
+  });
   appointmentObject.comments = newCommentList;
 }
-
 
 </script>
 <template>

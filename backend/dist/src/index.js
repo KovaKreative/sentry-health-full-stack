@@ -253,7 +253,7 @@ app.get('/patients', (req, res) => {
     res.json({ success: true, message: "Hello world!" });
 });
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
-    console.log(req);
+    console.log(req.body);
     const patient_id = req.body.patientId;
     const { mimetype, originalname, filename, destination } = req.file;
     resolvers.Mutation.addPatientFile(null, { patient_id, filename });

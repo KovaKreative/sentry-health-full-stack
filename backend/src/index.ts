@@ -289,7 +289,7 @@ app.get('/patients', (req, res) => {
 
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
 
-  console.log(req);
+  console.log(req.body);
   const patient_id = req.body.patientId;
 
   const { mimetype, originalname, filename, destination } = req.file;

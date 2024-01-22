@@ -6,10 +6,7 @@ import FileManager from './FileManager.vue';
 import { getPatients, getPatientData, uploadFile } from '~/helpers/apiCalls';
 import { downloadFileData } from '~/helpers/functions';
 
-let message = ref({
-  patients: "Fetching patients...",
-  data: "Fetching patient data...",
-});
+import { toast } from 'vue3-toastify';
 
 let patient = ref({ id: "", name: "" });
 
@@ -19,35 +16,109 @@ let patientData = ref(null);
 const upload = ref(null);
 let patientFile = ref(null);
 
-function uploadPatientFile(file) {
-  uploadFile(file, props.patient.id).then(data => {
-    upload.value.value = "";
-    patientFile.value = null;
+let filesComponentKey = ref(0);
 
-    if (data !== null) {
-      files.value = [...data];
-    }
+function uploadPatientFile(file) {
+  toast("Uploading file...", {
+    "theme": "auto",
+    "type": "info",
+    "position": "top-center",
+    "autoClose": 1000
   });
+  uploadFile(file, patientData.value.id)
+    .then(data => {
+      upload.value.value = "";
+      patientFile.value = null;
+
+      filesComponentKey.value++;
+
+      if (!data) {
+        toast("Something went wrong. The file may have still been uploaded.", {
+          "theme": "auto",
+          "type": "warning",
+          "position": "top-center",
+          "autoClose": 4000
+        });
+      }
+
+      toast("File uploaded successfully!", {
+        "theme": "auto",
+        "type": "success",
+        "position": "top-center",
+        "autoClose": 1000
+      });
+    });
 }
 
 onMounted(() => {
-  
-  getPatients(patients.value).finally(() => {
-    if (!patients.length) {
-      message.value.patients = "No patients found in Database.";
-    }
+  toast("Getting patients...", {
+    "theme": "auto",
+    "type": "info",
+    "position": "top-center",
+    "autoClose": 1000
   });
+  getPatients(patients.value)
+    .then(data => {
+      patients.value.push(...data);
+      if (!patients.value.length) {
+        return toast("No patients found in the database...", {
+          "theme": "auto",
+          "type": "warning",
+          "position": "top-center",
+          "autoClose": 3000
+        });
+      }
+      toast("Patients retrieved successfully!", {
+        "theme": "auto",
+        "type": "success",
+        "position": "top-center",
+        "autoClose": 1000
+      });
+    })
+    .catch(() => {
+      toast("Unable to retrieve patients from the database...", {
+        "theme": "auto",
+        "type": "error",
+        "position": "top-center",
+        "autoClose": 3000
+      });
+    });
 });
 
 watch(patient, () => {
-  message.value.data = "Fetching patient data...";
-  patientData.value = null;
-  getPatientData(patient.value.name, patientData).finally(() => {
-    console.log(patientData.value);
-    if (!patientData.value) {
-      return message.value.data = "No patient data found.";
-    }
+  toast("Getting patient data...", {
+    "theme": "auto",
+    "type": "info",
+    "position": "top-center",
+    "autoClose": 1000
   });
+  patientData.value = null;
+  getPatientData(patient.value.name, patientData)
+    .then(data => {
+      patientData.value = data;
+      if (!patientData.value) {
+        return toast("No patient data found.", {
+          "theme": "auto",
+          "type": "warning",
+          "position": "top-center",
+          "autoClose": 3000
+        });
+      }
+      toast("Patient data retrieved successfully!", {
+        "theme": "auto",
+        "type": "success",
+        "position": "top-center",
+        "autoClose": 1000
+      });
+    })
+    .catch(() => {
+      toast("Unable to retrieve patient data.", {
+        "theme": "auto",
+        "type": "error",
+        "position": "top-center",
+        "autoClose": 2000
+      });
+    });
 });
 
 </script>
@@ -62,14 +133,12 @@ watch(patient, () => {
           <option v-for="item in patients" :value="item">{{ item.name }}</option>
         </select>
       </div>
-      <div v-else>{{ message.patients }}</div>
     </div>
     <hr>
     <!-- File Upload -->
-    <FileManager v-if="patientData" :patient="{ name: patientData.name, id: patientData.id }" />
+    <FileManager :key="filesComponentKey" v-if="patientData" :patient="{ name: patientData.name, id: patientData.id }" />
     <!-- Appointments -->
     <div v-if="patientData">
-      <div v-if="patient.id && !patientData">{{ message.data }}</div>
       <label for="patientFile">Upload:</label>
       <input name="patientFile" type="file" ref="upload" accept=".json" @change="e => patientFile = e.target.files[0]" />
       <button @click="uploadPatientFile(patientFile)" :disabled="!patientFile">Upload</button>

@@ -1,4 +1,7 @@
 <script setup>
+
+import "vue3-toastify/dist/index.css";
+
 import AssistantPanel from './AssistantPanel.vue';
 import DoctorPanel from './DoctorPanel.vue';
 
