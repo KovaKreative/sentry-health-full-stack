@@ -1,6 +1,5 @@
 <script setup>
 const props = defineProps(['appointments']);
-console.log(props);
 
 import { addComment, updateComment, removeComment } from '~/helpers/apiCalls';
 
@@ -69,6 +68,7 @@ async function deleteComment(appointmentId, comment) {
 
   appointmentObject.comments = newCommentList;
 }
+
 
 </script>
 <template>

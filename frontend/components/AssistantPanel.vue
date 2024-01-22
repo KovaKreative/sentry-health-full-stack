@@ -1,8 +1,15 @@
 <script setup>
 
 import Appointments from './Appointments.vue';
+import FileManager from './FileManager.vue';
 
-import { getPatients, getPatientData } from '~/helpers/apiCalls';
+import { getPatients, getPatientData, uploadFile } from '~/helpers/apiCalls';
+import { downloadFileData } from '~/helpers/functions';
+
+let message = ref({
+  patients: "Fetching patients...",
+  data: "Fetching patient data...",
+});
 
 let patient = ref({ id: "", name: "" });
 
@@ -12,59 +19,35 @@ let patientData = ref(null);
 const upload = ref(null);
 let patientFile = ref(null);
 
-async function uploadFile(event) {
+function uploadPatientFile(file) {
+  uploadFile(file, props.patient.id).then(data => {
+    upload.value.value = "";
+    patientFile.value = null;
 
-  const formData = new FormData();
-  formData.append('patientFile', event);
-
-  try {
-    const response = await fetch(`http://localhost:4000/upload`, {
-      method: "POST",
-      body: formData,
-      // headers: {
-      //   "Content-Type": "multipart/form-data",
-      // }
-    });
-
-    const resJson = await response.json();
-    console.log("Successfully uploaded file:", resJson);
-
-    if (resJson.success) {
-      upload.value.value = "";
-      patientFile = null;
+    if (data !== null) {
+      files.value = [...data];
     }
-
-    return resJson.success;
-
-  } catch (error) {
-    alert(error);
-    return null;
-  }
-
-}
-
-function downloadPatientData(patientData) {
-  const file = new Blob([JSON.stringify(patientData)], { type: 'application/json' });
-  const url = URL.createObjectURL(file);
-  const suffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', `${patientData.name.replaceAll(' ', '_')}-${suffix}.json`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  console.log(patientData);
+  });
 }
 
 onMounted(() => {
-  getPatients(patients.value);
+  
+  getPatients(patients.value).finally(() => {
+    if (!patients.length) {
+      message.value.patients = "No patients found in Database.";
+    }
+  });
 });
 
 watch(patient, () => {
+  message.value.data = "Fetching patient data...";
   patientData.value = null;
-  getPatientData(patient.value.name, patientData);
+  getPatientData(patient.value.name, patientData).finally(() => {
+    console.log(patientData.value);
+    if (!patientData.value) {
+      return message.value.data = "No patient data found.";
+    }
+  });
 });
 
 </script>
@@ -78,18 +61,22 @@ watch(patient, () => {
         <select name="patient" v-model="patient">
           <option v-for="item in patients" :value="item">{{ item.name }}</option>
         </select>
-        <button v-if="patientData" @click="downloadPatientData(patientData)">Download Patient Data</button>
       </div>
-      <!-- File Upload -->
-      <div>
-        <label for="patientFile">Upload:</label>
-        <input name="patientFile" type="file" ref="upload" accept=".json" @change="e => patientFile = e.target.files[0]" />
-        <button @click="uploadFile(patientFile)" :disabled="!patientFile">Upload</button>
-      </div>
+      <div v-else>{{ message.patients }}</div>
     </div>
     <hr>
+    <!-- File Upload -->
+    <FileManager v-if="patientData" :patient="{ name: patientData.name, id: patientData.id }" />
     <!-- Appointments -->
-    <Appointments v-if="patientData" :appointments="patientData.appointments" />
+    <div v-if="patientData">
+      <div v-if="patient.id && !patientData">{{ message.data }}</div>
+      <label for="patientFile">Upload:</label>
+      <input name="patientFile" type="file" ref="upload" accept=".json" @change="e => patientFile = e.target.files[0]" />
+      <button @click="uploadPatientFile(patientFile)" :disabled="!patientFile">Upload</button>
+      <hr>
+      <Appointments v-if="patientData" :appointments="patientData.appointments" />
+      <button @click="downloadFileData(JSON.stringify(patientData))">Download Patient Data</button>
+    </div>
   </div>
 </template>
 

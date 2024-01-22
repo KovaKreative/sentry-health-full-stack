@@ -14,12 +14,12 @@ function menu(index) {
     
 <template>
   <main>
-    <section class="panel panel-open">
+    <nav class="panel panel-open">
       <button :class="{ selected: selection == 0 }" @click="menu(0)">Assistant</button>
       <button :class="{ selected: selection == 1 }" @click="menu(1)">Doctor</button>
-    </section>
+    </nav>
     <section class="container">
-      <currentWindow /> 
+      <currentWindow />
     </section>
   </main>
 </template>
@@ -29,9 +29,9 @@ function menu(index) {
 main {
   display: flex;
   flex-direction: column;
+  max-width: 1280px;
   margin: auto;
-  max-width: 80%;
-  max-height: 90vh;
+  height: 100vh;
 }
 
 button {
@@ -54,6 +54,18 @@ button.selected {
   font-weight: bold;
 }
 
+nav {
+  flex: 0 1 50px;
+}
+
+.notification {
+  color: white;
+  text-align: center;
+  margin: auto;
+  width: 100%;
+
+}
+
 .panel {
   flex: 1;
   display: flex;
@@ -62,15 +74,12 @@ button.selected {
 }
 
 .container {
-  flex: 2;
+  flex: 12 0 auto;
   background-color: #cadfff;
   padding: 1em;
-  border-radius: 0px 20px 20px 20px;
+  border-radius: 0px 20px 0px 0px;
   box-shadow: #19024ea7 3px 7px 5px;
   min-height: 50vh;
-  width: 100%;
-  margin-bottom: 1em;
   overflow-y: scroll;
 }
-
 </style>

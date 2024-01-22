@@ -1,7 +1,7 @@
 <script setup>
 
 import Appointments from './Appointments.vue';
-
+import FileManager from './FileManager.vue';
 
 import { getDoctors, getDoctorData } from '~/helpers/apiCalls';
 
@@ -14,8 +14,8 @@ onMounted(() => {
 });
 
 watch(doctor, () => {
+  appointments.value = [];
   getDoctorData(doctor.value.id, appointments);
-  console.log(appointments);
 });
 
 </script>
@@ -29,6 +29,12 @@ watch(doctor, () => {
         <option v-for="item in doctors" :value="item">Dr. {{ item.name }}</option>
       </select>
     </form>
+    <hr>
+    <div class="flex flex-wrap">
+      <FileManager v-for="appointment of appointments"
+        :patient="{ id: appointment.patient.id, name: appointment.patient.name }" />
+    </div>
+    <hr>
     <Appointments v-if="appointments.length > 0" :appointments="appointments" />
   </div>
 </template>
@@ -38,4 +44,5 @@ watch(doctor, () => {
   display: flex;
   gap: 2em;
   width: 50%;
-}</style>
+}
+</style>

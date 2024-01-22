@@ -23,9 +23,6 @@ async function getDoctorData(doctor_id: String, appointments: { value: unknown[]
           id
           name
         }
-        doctor {
-          name
-        }
         comments(desc: $desc) {
           id
           time
@@ -49,7 +46,7 @@ async function getDoctorData(doctor_id: String, appointments: { value: unknown[]
 
 async function getPatients(patientsArray: { id: String, name: String; }[]) {
   try {
-    const query = "query GetPatients{ patients { name } }";
+    const query = "query GetPatients{ patients { name, id } }";
     const response = await fetch(`http://localhost:4000/api?query=${query}`, { headers: { "apollo-require-preflight": "no" } });
     const resJson = await response.json();
 
@@ -85,7 +82,6 @@ async function getPatientData(patientName: String, patientData: { value: unknown
     const variables = `{ "name": "${patientName}", "desc": false }`;
     const response = await fetch(`http://localhost:4000/api?query=${query}&variables=${variables}`, { headers: { "apollo-require-preflight": "no" } });
     const resJson = await response.json();
-
     patientData.value = { ...resJson.data.patientByName };
 
   } catch (error) {
@@ -196,5 +192,65 @@ async function removeComment(comment: { id: String, date: String, body: String; 
 
 }
 
+async function getFiles(patientId: string) {
+  try {
+    const query = `query PatientFilesByPatient($id: ID!) {
+      patientFilesByPatient(id: $id) {
+        id
+        filename
+      }
+    }`;
 
-export { getDoctors, getDoctorData, getPatients, getPatientData, updateComment, addComment, removeComment };
+    const variables = `{ "id": "${patientId}" }`;
+    const response = await fetch(`http://localhost:4000/api?query=${query}&variables=${variables}`, { headers: { "apollo-require-preflight": "no" } });
+    const resJson = await response.json();
+
+    console.log(resJson);
+
+    return [...resJson.data.patientFilesByPatient];
+
+  } catch (error) {
+    alert(error);
+    return null;
+  }
+}
+
+async function getFile(file: { id: string, filename: string; }, callback: Function) {
+  try {
+    const response = await fetch(`http://localhost:4000/download/${file.id}`);
+    const resJson = await response.json();
+
+    callback(JSON.stringify(resJson), file.filename);
+
+  } catch (error) {
+    alert(error);
+    return null;
+  }
+}
+
+async function uploadFile(file: string | Blob, patientId: string) {
+
+  const formData = new FormData();
+  formData.append('patientId', patientId);
+  formData.append('patientFile', file);
+
+  try {
+    const response = await fetch(`http://localhost:4000/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const resJson = await response.json();
+
+    return resJson.patientFiles;
+
+  } catch (error) {
+    alert(error);
+    return null;
+  }
+
+}
+
+
+
+export { getDoctors, getDoctorData, getPatients, getPatientData, updateComment, addComment, removeComment, getFile, uploadFile, getFiles };

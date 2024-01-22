@@ -1,5 +1,4 @@
 import express from 'express';
-import fs from 'node:fs';
 import cors from 'cors';
 import multer from 'multer';
 import { ApolloServer } from '@apollo/server';
@@ -51,6 +50,8 @@ type Query {
   appointmentsByDoctor(id: ID!): [Appointment]
   comments(desc: Boolean): [Comment]
   patientFiles: [PatientFile]
+  patientFilesByPatient(id: ID!): [PatientFile]
+  patientFileById(id: ID!): PatientFile!
 }
 
 type Mutation {
@@ -81,24 +82,26 @@ const resolvers = {
     Query: {
         doctors: () => doctors,
         patients: () => patients,
-        patientByName: (_, args) => patients.find(patient => patient.name === args.name),
+        patientByName: (_, args) => patients.find(p => p.name === args.name),
         appointments: () => appointments,
         comments: (_, args) => sortComments(comments, args.desc),
-        appointmentsByPatient: (_, args) => appointments.filter(appointment => appointment.patient_id === args.id),
-        appointmentsByDoctor: (_, args) => appointments.filter(appointment => appointment.doctor_id === args.id),
-        patientFiles: () => patientFiles
+        appointmentsByPatient: (_, args) => appointments.filter(a => a.patient_id === args.id),
+        appointmentsByDoctor: (_, args) => appointments.filter(a => a.doctor_id === args.id),
+        patientFiles: () => patientFiles,
+        patientFilesByPatient: (_, args) => patientFiles.filter(f => f.patient_id === args.id),
+        patientFileById: (_, args) => patientFiles.find(f => f.id === args.id)
     },
     Doctor: {
         appointments(parent) {
-            return appointments.filter(appt => appt.doctor_id === parent.id);
+            return appointments.filter(a => a.doctor_id === parent.id);
         }
     },
     Patient: {
         appointments(parent) {
-            return appointments.filter(appt => appt.patient_id === parent.id);
+            return appointments.filter(a => a.patient_id === parent.id);
         },
         files(parent) {
-            return patientFiles.filter(file => file.patient_id === parent.id);
+            return patientFiles.filter(f => f.patient_id === parent.id);
         }
     },
     Appointment: {
@@ -115,7 +118,7 @@ const resolvers = {
     },
     Comment: {
         appointment(parent) {
-            return appointments.find(appt => parent.appointment_id === appt.id);
+            return appointments.find(a => parent.appointment_id === a.id);
         }
     },
     PatientFile: {
@@ -250,18 +253,15 @@ app.get('/patients', (req, res) => {
     res.json({ success: true, message: "Hello world!" });
 });
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
+    console.log(req);
+    const patient_id = req.body.patientId;
     const { mimetype, originalname, filename, destination } = req.file;
-    // console.log(mimetype);
-    if (mimetype !== 'application/json') {
-        return res.json({ success: true });
-    }
-    const filePath = `${destination}${filename}`;
-    console.log(filePath);
-    let patient_id;
-    fs.readFile(filePath, 'utf-8', (err, data) => {
-        const jsonData = JSON.parse(data);
-        patient_id = jsonData.id;
-        resolvers.Mutation.addPatientFile(null, { patient_id, filename });
-    });
-    return res.json({ success: true });
+    resolvers.Mutation.addPatientFile(null, { patient_id, filename });
+    return res.json({ success: true, patientFiles: [...patientFiles.filter(f => f.patient_id === patient_id)] });
+});
+app.get('/download/:id', cors(), (req, res) => {
+    const { id } = req.params;
+    console.log(patientFiles);
+    const { filename } = patientFiles.find(f => f.id === id);
+    res.sendFile(`${filename}`, { root: 'downloads' });
 });
