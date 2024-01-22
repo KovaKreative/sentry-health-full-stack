@@ -189,7 +189,6 @@ async function getFile(file: { id: string, filename: string; }, callback: Functi
 }
 
 async function uploadFile(file: string | Blob, patientId: string) {
-  console.log(patientId);
   const formData = new FormData();
   formData.append('patientId', patientId);
   formData.append('patientFile', file);
