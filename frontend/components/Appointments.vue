@@ -77,7 +77,6 @@ async function saveComment(comment) {
 
   updateComment(comment)
     .then(data => {
-      console.log(data);
       if (!data) {
         comment.body = buffer;
         buffer = "";
@@ -97,7 +96,6 @@ async function saveComment(comment) {
       comment.time = data.time;
     })
     .catch((err) => {
-      console.log(err);
       toast("Unable to save comment.", {
         "theme": "auto",
         "type": "error",
