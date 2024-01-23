@@ -68,5 +68,11 @@ const comments = [
         body: 'The doctor and the patient didn\'t see eye to eye.'
     },
 ];
-const patientFiles = [];
+const patientFiles = [
+    {
+        id: "1706024503259-883680668",
+        filename: "patientFile-1706024503256-44129967.json",
+        patient_id: "1"
+    }
+];
 export { doctors, patients, appointments, comments, patientFiles };

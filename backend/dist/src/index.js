@@ -32,7 +32,7 @@ app.get('/download/:id', cors(), (req, res) => {
 });
 app.post('/upload', cors(), upload.single('patientFile'), (req, res) => {
     const patient_id = req.body.patientId;
-    const { filename } = req.file;
+    const { mimetype, originalname, filename, destination } = req.file;
     resolvers.Mutation.addPatientFile(null, { patient_id, filename });
     return res.json({ success: true, patientFiles: [...patientFiles.filter(f => f.patient_id === patient_id)] });
 });
